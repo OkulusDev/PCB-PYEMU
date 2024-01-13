@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Определение базового класса компонента
 typedef struct {
@@ -106,42 +107,139 @@ void printPCB(PCB* pcb) {
     printf("Power Consumption: %.2f\n", pcb->powerConsumption);
 }
 
+// Функция для вывода платы в ASCII-графике
+void printPCBAscii(PCB* pcb) {
+    printf("PCB Name: %s\n", pcb->name);
+    printf("Components:\n");
+    for (int i = 0; i < pcb->numComponents; i++) {
+        printf("   %s\n", pcb->components[i]->base.name);
+    }
+    printf("Wires:\n");
+    for (int i = 0; i < pcb->numWires; i++) {
+        printf("   %s\n", pcb->wires[i]->name);
+    }
+}
+
+// Функция для изменения значения компонента
+void modifyComponentValue(Component* component, float newValue) {
+    component->value = newValue;
+}
+
 int main() {
     PCB* pcb = createPCB("MyPCB");
 
-    // Пример создания компонентов
-    LinearComponent* resistor = createLinearComponent("Resistor", 100.0, 5.0);
-    LinearComponent* resistor2 = createLinearComponent("Resistor", 420.0, 3.9);
-    LinearComponent* transistor = createLinearComponent("Transistor", 0.1, 3.3);
-    LinearComponent* transistor2 = createLinearComponent("Transistor", 0.3, 2.1);
-    // ... создание остальных компонентов
+    int choice;
+    do {
+        printf("Menu:\n");
+        printf("1. Add Component\n");
+        printf("2. Add Wire\n");
+        printf("3. Modify Component Value\n");
+        printf("4. Print PCB\n");
+        printf("5. Print PCB (ASCII)\n");
+        printf("0. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
 
-    // Пример добавления компонентов на плату
-    addComponent(pcb, (LinearComponent*)resistor);
-    addComponent(pcb, (LinearComponent*)transistor);
-    addComponent(pcb, (LinearComponent*)resistor2);
-    addComponent(pcb, (LinearComponent*)transistor2);
-    // ... добавление остальных компонентов
+        switch (choice) {
+            case 1: {
+                char name[20];
+                float value;
+                printf("Enter component name: ");
+                scanf("%s", name);
+                printf("Enter component value: ");
+                scanf("%f", &value);
+                LinearComponent* component = createLinearComponent(name, value, 0.0);
+                addComponent(pcb, component);
+                printf("Component added successfully.\n");
+                break;
+            }
+            case 2: {
+                char name[20];
+                char startComponentName[20];
+                char endComponentName[20];
+                printf("Enter wire name: ");
+                scanf("%s", name);
+                printf("Enter start component name: ");
+                scanf("%s", startComponentName);
+                printf("Enter end component name: ");
+                scanf("%s", endComponentName);
 
-    // Пример создания и добавления провода на плату
-    Wire* wire = createWire("Wire1", (Component*)resistor, (Component*)transistor);
-    Wire* wire2 = createWire("Wire1", (Component*)transistor, (Component*)resistor2);
-    Wire* wire3 = createWire("Wire1", (Component*)resistor2, (Component*)transistor);
-    addWire(pcb, wire);
-    addWire(pcb, wire2);
-    addWire(pcb, wire3);
+                // Find start and end components in the PCB
+                Component* startComponent = NULL;
+                Component* endComponent = NULL;
+                for (int i = 0; i < pcb->numComponents; i++) {
+                    if (strcmp(pcb->components[i]->base.name, startComponentName) == 0) {
+                        startComponent = &(pcb->components[i]->base);
+                    }
+                    if (strcmp(pcb->components[i]->base.name, endComponentName) == 0) {
+                        endComponent = &(pcb->components[i]->base);
+                    }
+                }
 
-    // Вычисление потребления энергии
-    calculatePowerConsumption(pcb);
+                if (startComponent != NULL && endComponent != NULL) {
+                    Wire* wire = createWire(name, startComponent, endComponent);
+                    addWire(pcb, wire);
+                    printf("Wire added successfully.\n");
+                } else {
+                    printf("One or both of the components not found.\n");
+                }
+                break;
+            }
+            case 3: {
+                char componentName[20];
+                float newValue;
+                printf("Enter component name: ");
+                scanf("%s", componentName);
+                printf("Enter new value: ");
+                scanf("%f", &newValue);
 
-    // Вывод информации о плате
-    printPCB(pcb);
+                // Find the component in the PCB
+                Component* component = NULL;
+                for (int i = 0; i < pcb->numComponents; i++) {
+                    if (strcmp(pcb->components[i]->base.name, componentName) == 0) {
+                        component = &(pcb->components[i]->base);
+                        break;
+                    }
+                }
+
+                if (component != NULL) {
+                    modifyComponentValue(component, newValue);
+                    printf("Component value modified successfully.\n");
+                } else {
+                    printf("Component not found.\n");
+                }
+                break;
+            }
+            case 4: {
+                printPCB(pcb);
+                break;
+            }
+            case 5: {
+                printPCBAscii(pcb);
+                break;
+            }
+            case 0: {
+                printf("Exiting...\n");
+                break;
+            }
+            default: {
+                printf("Invalid choice. Please try again.\n");
+                break;
+            }
+        }
+        printf("\n");
+    } while (choice != 0);
 
     // Освобождение памяти
-    // ... освобождение компонентов и проводов
+    for (int i = 0; i < pcb->numComponents; i++) {
+        free(pcb->components[i]);
+    }
     free(pcb->components);
+    for (int i = 0; i < pcb->numWires; i++) {
+        free(pcb->wires[i]);
+    }
     free(pcb->wires);
     free(pcb);
-    
+
     return 0;
 }
